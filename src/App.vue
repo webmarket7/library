@@ -75,7 +75,7 @@ export default {
   .row
     width: 90%
 
-  @media screen and (max-width: 40em)
+  @media only screen and (min-device-width: 320px) and (max-device-width: 480px)
     .container
       width: 100%
       height: calc(100vh - 50px)
