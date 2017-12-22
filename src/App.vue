@@ -71,6 +71,19 @@ export default {
     height: 100vh
     display: flex
     justify-content: center
+
   .row
-    width: 70%
+    width: 90%
+
+  @media screen and (max-width: 40em)
+    .container
+      width: 100%
+      height: calc(100vh - 50px)
+      top: 50px
+      left: 0
+      display: flex
+      justify-content: center
+
+    .row
+      width: 90%
 </style>

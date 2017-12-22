@@ -16,5 +16,4 @@
 <style lang="sass" scoped>
   h1, article
     text-align: center
-
 </style>
