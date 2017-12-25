@@ -16,7 +16,7 @@ export default {
       menu: {
         name: 'Главная',
         structure: [
-          { id: 'dashboard',
+          { id: 'characters',
             name: 'Мои персонажи',
             submenu: [
               { id: 'editor',
