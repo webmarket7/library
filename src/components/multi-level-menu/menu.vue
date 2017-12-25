@@ -13,28 +13,51 @@
       </section>
       <nav class="menu__breadcrumbs">
         <a class="menu__breadcrumb" v-for="(breadcrumb, index) in breadcrumbs"
-           @click=" !playsForward && !playsBack ? goBack(breadcrumb, index) : sleep()">{{ breadcrumb }}</a>
+           @click=" returnTo(breadcrumb, index)"
+           :class="{'disabled': disabled}">
+          {{ breadcrumb }}
+        </a>
       </nav>
       <section class="menu__itemlist">
-        <ul id='topLayer' class="menu__level" :class="current ? 'onTop' : ''">
-          <transition-group :name="transitionDirection" mode="in-out">
-            <li class="menu__item"
-                v-for="item of topLayer"
-                @click="item.submenu ? !playsForward && !playsBack ? goForward(item) : sleep() : setActive(item)"
-                :key="item.name">
-              <a class="menu__link"
-                 :class="item.submenu ? 'menu__link_submenu' : item.name === active ? 'menu__link_active' : ''">{{ item.name }}</a>
+        <ul class="menu__level"
+            :class="{'onTop': menuLevel % 2 === 0}">
+          <transition-group @before-enter="beforeEnter"
+                            @after-enter="afterEnter"
+                            @enter="enter"
+                            @leave="leave"
+                            @after-leave="afterLeave">
+            <li v-for="(item, index) in even"
+                :key="index"
+                :id="(index + 1)"
+                class="menu__item"
+                :class="{'disabled': disabled}"
+                @click="item.submenu ? open(item) : setActive(item)"
+                v-if="show">
+                <a class="menu__link"
+                   :class="item.submenu ? 'menu__link_submenu' : item.name === active ? 'menu__link_active' : ''">
+                  {{ item.name }}
+                </a>
             </li>
           </transition-group>
         </ul>
-        <ul id='bottomLayer' class="menu__level" :class="!current ? 'onTop' : ''">
-          <transition-group :name="transitionDirection" mode="in-out">
-            <li class="menu__item"
-                v-for="item of bottomLayer"
-                @click="item.submenu ? !playsForward && !playsBack ? goForward(item) : sleep() : setActive(item)"
-                :key="item.name">
-              <a class="menu__link"
-                 :class="item.submenu ? 'menu__link_submenu' : item.name === active ? 'menu__link_active' : ''">{{ item.name }}</a>
+        <ul class="menu__level"
+            :class="{'onTop': menuLevel % 2 === 1}">
+          <transition-group @before-enter="beforeEnter"
+                            @after-enter="afterEnter"
+                            @enter="enter"
+                            @leave="leave"
+                            @after-leave="afterLeave">
+            <li v-for="(item, index) in odd"
+                :key="index"
+                :id="(index + 1)"
+                class="menu__item"
+                :class="{'disabled': disabled}"
+                @click="item.submenu ? open(item) : setActive(item)"
+                v-if="!show">
+                  <a class="menu__link"
+                     :class="item.submenu ? 'menu__link_submenu' : item.name === active ? 'menu__link_active' : ''">
+                    {{ item.name }}
+                  </a>
             </li>
           </transition-group>
         </ul>
@@ -61,85 +84,72 @@
         color: "#bdbdbd",
         state: false,
         active: '',
-        current: true,
-        currentPage: '/',
-        transitionDirection: 'forward',
-        playsForward: false,
-        playsBack: false,
+        show: true,
+        elementPosition: 100,
+        disabled: false,
         breadcrumbs: [],
-        topLayer: [],
-        bottomLayer: []
+        menuLevel: 0,
+        even: [],
+        odd: [],
+      }
+    },
+    computed: {
+      longerList() {
+        return this.even.length > this.odd.length ? this.even.length : this.odd.length
       }
     },
     methods: {
       toggle() {
         this.state = !this.state
       },
-      add(submenu) {
-        let self = this;
-        let totalDuration = 600 + (submenu.length * 70);
-        let i = 0;
-        let timerId = setInterval(function() {
-          if (i < submenu.length) {
-            self.current ? self.bottomLayer.push(submenu[i]) : self.topLayer.push(submenu[i]);
-            i++;
-          }
-        }, 70);
-
-        setTimeout(function() {
-          clearInterval(timerId);
-          self.current = !self.current;
-        }, totalDuration);
-        return totalDuration
-      },
-      remove() {
-        let self = this;
-        let totalDuration = self.current ? (600 + (self.topLayer.length -1) * 12) : (600 + (self.bottomLayer.length - 1) * 12);
-        let timerId = setInterval(function() {
-          self.current ? self.topLayer.splice(0, 1) : self.bottomLayer.splice(0, 1);
-        }, 70);
-
-        setTimeout(function() {
-          clearInterval(timerId);
-        }, totalDuration);
-        return totalDuration
-      },
-      goForward(item) {
-        let self = this;
-        this.playsForward = true;
-        this.transitionDirection = 'forward';
-        this.remove();
-        let timeOut = this.add(item.submenu);
-        setTimeout(function() {
-          self.playsForward = false;
-        }, timeOut);
-        this.breadcrumbs.push(item.name);
-        this.active = item.id === 'editor' ? 'Раса' : ''
-      },
-      goBack(breadcrumb, index) {
-        let self = this;
-        this.playsBack = true;
-        this.transitionDirection = 'back';
-        let level = breadcrumb === this.menu.name ? this.menu.structure : this.menu.structure.find(item => item.name === breadcrumb).submenu;
-        this.add(level);
-        let timeOut = this.remove();
-        setTimeout(function() {
-          self.playsBack = false;
-        }, timeOut);
-        this.breadcrumbs.splice(index+1);
-      },
       setActive(item) {
         this.active = item.name;
       },
-      sleep() {
-        return 'Skipping'
-      }
+      open(item) {
+        this.show = !this.show;
+        this.breadcrumbs.push(item.name);
+        if (this.menuLevel % 2 === 0){
+          this.odd = item.submenu;
+        }
+        else {
+          this.even = item.submenu;
+        }
+        this.menuLevel++
+      },
+      returnTo(breadcrumb, index) {
+        this.show = !this.show;
+        this.breadcrumbs = this.breadcrumbs.slice(0, index + 1);
+        let target = index > 0 ? target = this.menu.structure.find(el => el.name === breadcrumb).submenu : this.menu.structure;
+        if (this.menuLevel % 2 === 0){
+          this.odd = target;
+        }
+        else {
+          this.even = target;
+        }
+        this.menuLevel--
+      },
+      beforeEnter(el) {
+        Velocity(el, { translateX: ['100%']}, {duration: 0, delay: 0});
+        this.disabled = true;
+       },
+      enter(el, done) {
+        Velocity(el, { translateX: ['0%', '100%']}, {easing: [0.7, 0, 0.3, 1] , duration: 600, delay: 50 * el.id, complete: done });
+      },
+      afterEnter(el) {
+        this.disabled = false
+      },
+      leave(el, done) {
+        Velocity(el, { translateX: ['-100%', '0%']}, {easing: [0.7, 0, 0.3, 1] , duration: 600, delay: 50 * el.id, complete: done });
+      },
+      afterLeave(el) {
+        this.disabled = false
+      },
     },
     components: {
       'menu-button': menuButton
     },
     created() {
-      this.topLayer = this.menu.structure.slice(0);
+      this.even = this.menu.structure.slice(0);
       this.breadcrumbs.push(this.menu.name);
     }
   }
@@ -150,6 +160,9 @@
 
   .onTop
     z-index: 1000
+
+  .disabled
+    pointer-events: none
 
   %general
     width: $menu-width
@@ -283,89 +296,6 @@
         color: $darker-color
         cursor: pointer
 
-  .mobile__header
-    visibility: hidden
-
-  .forward-enter-active, .forward-enter
-    animation: inFromRight 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-
-  @-webkit-keyframes inFromRight
-    from
-      opacity: 0
-      -webkit-transform: translate3d(100%, 0, 0)
-      transform: translate3d(100%, 0, 0)
-    to
-      opacity: 1
-      -webkit-transform: translate3d(0, 0, 0)
-      transform: translate3d(0, 0, 0)
-
-  @keyframes inFromRight
-    from
-      opacity: 0
-      -webkit-transform: translate3d(0, 0, 0)
-      transform: translate3d(100%, 0, 0)
-    to
-      opacity: 1
-      -webkit-transform: translate3d(0, 0, 0)
-      transform: translate3d(0, 0, 0)
-
-  .forward-leave-to
-    -webkit-animation: outToLeft 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-    animation: outToLeft 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-
-  @-webkit-keyframes outToLeft
-    to
-      opacity: 0
-      -webkit-transform: translate3d(-100%, 0, 0)
-      transform: translate3d(-100%, 0, 0)
-
-  @keyframes outToLeft
-    to
-      opacity: 0
-      -webkit-transform: translate3d(-100%, 0, 0)
-      transform: translate3d(-100%, 0, 0)
-
-  .back-enter-active, .back-enter
-    -webkit-animation: inFromLeft 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-    animation: inFromLeft 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-
-  @-webkit-keyframes inFromLeft
-    from
-      opacity: 0
-      -webkit-transform: translate3d(100%, 0, 0)
-      transform: translate3d(-100%, 0, 0)
-    to
-      opacity: 1
-      -webkit-transform: translate3d(0, 0, 0)
-      transform: translate3d(0, 0, 0)
-
-  @keyframes inFromLeft
-    from
-      opacity: 0
-      -webkit-transform: translate3d(100%, 0, 0)
-      transform: translate3d(-100%, 0, 0)
-    to
-      opacity: 1
-      -webkit-transform: translate3d(0, 0, 0)
-      transform: translate3d(0, 0, 0)
-
-  .back-leave-to
-    -webkit-animation: outToRight 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-    animation: outToRight 0.6s both cubic-bezier(0.7, 0, 0.3, 1)
-
-
-  @-webkit-keyframes outToRight
-    to
-      opacity: 0
-      -webkit-transform: translate3d(100%, 0, 0)
-      transform: translate3d(100%, 0, 0)
-
-  @keyframes outToRight
-    to
-      opacity: 0
-      -webkit-transform: translate3d(100%, 0, 0)
-      transform: translate3d(100%, 0, 0)
-
   @media screen and (max-width: 40em)
     .mobile__header
       visibility: visible
@@ -392,4 +322,5 @@
     .menu_open
       -webkit-transform: translate3d(0, 0, 0)
       transform: translate3d(0, 0, 0)
+
 </style>

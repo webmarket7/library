@@ -6,6 +6,7 @@
 </template>
 
 <script>
+import multiLevelMenu from './components/multi-level-menu/menu.vue';
 import mainPage from './components/main-page.vue'
 export default {
   name: 'app',
@@ -56,7 +57,8 @@ export default {
     }
   },
   components: {
-    mainPage
+    mainPage,
+    multiLevelMenu
   }
 }
 </script>
